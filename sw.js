@@ -1,4 +1,4 @@
-const CACHE = 'biotrop-production-v2-22';
+const CACHE = 'biotrop-production-v2-23';
 const CORE_ASSETS = [
   './app.html',
   './config.js',
