@@ -1,18 +1,22 @@
 window.BIOTROP_CONFIG = Object.freeze({
-  supabaseUrl: 'https://xxqipgvdksughongzpqj.supabase.co',
-  supabaseAnonKey: 'sb_publishable_hI0bUzs2tJYE9noTc5Df0Q_rF8nJ8n',
+  supabaseUrl: 'https://hoikliqttxqdsyyjdnul.supabase.co',
+  supabaseAnonKey: 'sb_publishable_PeiXiPCMENjp9ajwW-EbJw_IohMAt1h',
   apiBaseUrl: window.location.origin + '/api'
 });
 
-/* ================= BIOTROP PASSWORD RECOVERY =================
-   O app antigo apenas enviava o e-mail. Quando o usuário clicava no
-   link, o Supabase devolvia a sessão de recuperação, mas a aplicação
-   não tratava o evento PASSWORD_RECOVERY.
+/* ================= BIOTROP AUTH / PASSWORD RECOVERY =================
+   A configuração anterior apontava para o projeto Supabase antigo e o
+   recovery era ligado a window.supabase, enquanto a aplicação V2 usa
+   window.SB. Esta camada funciona com o cliente real usado pela V2.
 */
 (function () {
-  let supabaseLib = null;
-  let clientPatched = false;
-  let recoveryPending = null;
+  'use strict';
+
+  let recoveryModalOpen = false;
+  let recoveryClient = null;
+  let recoveryListenerAttached = false;
+  let resetMethodPatched = false;
+  let codeExchanged = false;
 
   function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, function (ch) {
@@ -20,15 +24,26 @@ window.BIOTROP_CONFIG = Object.freeze({
     });
   }
 
+  function isRecoveryUrl() {
+    const hash = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
+    const query = new URLSearchParams(window.location.search || '');
+    return hash.get('type') === 'recovery' ||
+      query.get('type') === 'recovery' ||
+      hash.has('access_token') ||
+      hash.has('refresh_token') ||
+      query.has('code');
+  }
+
   function showRecoveryModal(client) {
-    if (!client || document.getElementById('biotrop-password-recovery')) return;
+    if (!client || recoveryModalOpen || document.getElementById('biotrop-password-recovery')) return;
+    recoveryModalOpen = true;
 
     const root = document.createElement('div');
     root.id = 'biotrop-password-recovery';
     root.innerHTML = `
       <style>
-        #biotrop-password-recovery{position:fixed;inset:0;z-index:99999;background:rgba(0,35,38,.58);display:flex;align-items:center;justify-content:center;padding:20px;font-family:'Segoe UI',system-ui,sans-serif}
-        #biotrop-password-recovery .br-card{width:100%;max-width:430px;background:#fff;border-radius:20px;padding:28px;box-shadow:0 30px 90px rgba(0,0,0,.25)}
+        #biotrop-password-recovery{position:fixed;inset:0;z-index:999999;background:rgba(0,35,38,.62);display:flex;align-items:center;justify-content:center;padding:20px;font-family:'Segoe UI',system-ui,sans-serif}
+        #biotrop-password-recovery .br-card{width:100%;max-width:430px;background:#fff;border-radius:20px;padding:28px;box-shadow:0 30px 90px rgba(0,0,0,.28)}
         #biotrop-password-recovery h2{margin:0 0 8px;color:#003C41;font-size:22px}
         #biotrop-password-recovery p{margin:0 0 20px;color:#60746d;font-size:13px;line-height:1.55}
         #biotrop-password-recovery label{display:block;font-size:12px;font-weight:700;color:#26463b;margin:14px 0 6px}
@@ -84,7 +99,7 @@ window.BIOTROP_CONFIG = Object.freeze({
         message.innerHTML = '<div class="br-msg br-success">Senha alterada com sucesso. Você será levado para a tela de login.</div>';
         setTimeout(async function () {
           try { await client.auth.signOut(); } catch (_) {}
-          window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+          window.history.replaceState({}, document.title, window.location.pathname);
           window.location.reload();
         }, 1200);
       } catch (error) {
@@ -98,40 +113,108 @@ window.BIOTROP_CONFIG = Object.freeze({
   }
 
   function patchClient(client) {
-    if (!client || client.__biotropRecoveryPatched) return client;
-    client.__biotropRecoveryPatched = true;
+    if (!client || !client.auth) return;
+    recoveryClient = client;
 
-    client.auth.onAuthStateChange(function (event, session) {
-      if (event === 'PASSWORD_RECOVERY') {
-        recoveryPending = { client, session };
-        setTimeout(function () {
-          showRecoveryModal(client);
-        }, 0);
-      }
-    });
+    if (!recoveryListenerAttached && typeof client.auth.onAuthStateChange === 'function') {
+      recoveryListenerAttached = true;
+      client.auth.onAuthStateChange(function (event) {
+        if (event === 'PASSWORD_RECOVERY') {
+          setTimeout(function () { showRecoveryModal(client); }, 0);
+        }
+      });
+    }
 
-    return client;
+    if (!resetMethodPatched && typeof client.auth.resetPasswordForEmail === 'function') {
+      resetMethodPatched = true;
+      const originalReset = client.auth.resetPasswordForEmail.bind(client.auth);
+      client.auth.resetPasswordForEmail = function (email, options) {
+        const opts = Object.assign({}, options || {}, {
+          redirectTo: (options && options.redirectTo) || (window.location.origin + window.location.pathname)
+        });
+        return originalReset(email, opts);
+      };
+    }
+
+    if (isRecoveryUrl()) handleRecoveryUrl(client);
   }
 
-  try {
-    Object.defineProperty(window, 'supabase', {
-      configurable: true,
-      get: function () { return supabaseLib; },
-      set: function (value) {
-        supabaseLib = value;
-        if (!value || typeof value.createClient !== 'function' || clientPatched) return;
+  async function handleRecoveryUrl(client) {
+    if (!client || codeExchanged) return;
 
-        const originalCreateClient = value.createClient.bind(value);
-        value.createClient = function () {
-          const client = originalCreateClient.apply(null, arguments);
-          return patchClient(client);
-        };
-        clientPatched = true;
+    const query = new URLSearchParams(window.location.search || '');
+    const code = query.get('code');
+    if (code && typeof client.auth.exchangeCodeForSession === 'function') {
+      codeExchanged = true;
+      try {
+        const result = await client.auth.exchangeCodeForSession(code);
+        if (result.error) throw result.error;
+      } catch (error) {
+        console.error('[BIOTROP] Falha ao validar código de recuperação:', error);
+        return;
       }
-    });
-  } catch (_) {}
+    }
 
-  window.addEventListener('DOMContentLoaded', function () {
-    if (recoveryPending) showRecoveryModal(recoveryPending.client);
-  });
+    setTimeout(async function () {
+      try {
+        const result = await client.auth.getSession();
+        if (result && result.data && result.data.session && isRecoveryUrl()) {
+          showRecoveryModal(client);
+        }
+      } catch (error) {
+        console.error('[BIOTROP] Falha ao obter sessão de recuperação:', error);
+      }
+    }, 250);
+  }
+
+  function watchForClient() {
+    if (window.SB) patchClient(window.SB);
+    if (window.supabase && window.supabase.auth) patchClient(window.supabase);
+    if (window.supabase && typeof window.supabase.createClient === 'function') {
+      const lib = window.supabase;
+      if (!lib.__biotropCreateClientPatched) {
+        lib.__biotropCreateClientPatched = true;
+        const originalCreateClient = lib.createClient.bind(lib);
+        lib.createClient = function () {
+          const client = originalCreateClient.apply(null, arguments);
+          patchClient(client);
+          return client;
+        };
+      }
+    }
+  }
+
+  function installSBWatcher() {
+    try {
+      let current = window.SB;
+      Object.defineProperty(window, 'SB', {
+        configurable: true,
+        get: function () { return current; },
+        set: function (value) {
+          current = value;
+          patchClient(value);
+        }
+      });
+      if (current) patchClient(current);
+    } catch (_) {
+      watchForClient();
+    }
+  }
+
+  function bootRecovery() {
+    installSBWatcher();
+    watchForClient();
+    let attempts = 0;
+    const timer = setInterval(function () {
+      watchForClient();
+      attempts += 1;
+      if (recoveryClient || attempts > 80) clearInterval(timer);
+    }, 100);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootRecovery, { once: true });
+  } else {
+    bootRecovery();
+  }
 })();
