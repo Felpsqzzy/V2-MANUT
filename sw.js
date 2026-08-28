@@ -1,4 +1,4 @@
-const CACHE = 'biotrop-production-v2-24';
+const CACHE = 'biotrop-production-v2-25';
 const CORE_ASSETS = [
   './app.html',
   './config.js',
@@ -13,7 +13,7 @@ async function appResponseWithTechLayer(request) {
   if (!type.includes('text/html')) return response;
 
   const html = await response.text();
-  const injected = html.replace('</body>', '<script src="./utilidades-tech.js?v=24"></script>\n</body>');
+  const injected = html.replace('</body>', '<script src="./utilidades-tech.js?v=25"></script>\n</body>');
   return new Response(injected, {
     status: response.status,
     statusText: response.statusText,
