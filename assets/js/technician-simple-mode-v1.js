@@ -1,8 +1,8 @@
-/* BIOTROP • Modo Técnico V2 — operação simples, sem visão/cadastros */
+/* BIOTROP • Modo Técnico V3 — operação simples, listas de materiais restauradas */
 (() => {
   'use strict';
-  if (window.__BIOTROP_TECH_SIMPLE_V2__) return;
-  window.__BIOTROP_TECH_SIMPLE_V2__ = true;
+  if (window.__BIOTROP_TECH_SIMPLE_V3__) return;
+  window.__BIOTROP_TECH_SIMPLE_V3__ = true;
 
   const $=(s,r=document)=>r.querySelector(s);
   const $$=(s,r=document)=>[...r.querySelectorAll(s)];
@@ -13,8 +13,9 @@
 
   const css=document.createElement('style');
   css.textContent=`
-    body.bt-technician-simple .sidebar{width:220px!important;padding:18px 12px!important;position:fixed!important;left:0;top:0;bottom:0;height:100vh;z-index:1000}
-    body.bt-technician-simple .main-area{margin-left:220px!important;padding:28px 34px;min-height:100vh}
+    /* Sidebar sempre fixa, inclusive em telas menores */
+    body.bt-technician-simple .sidebar{width:220px!important;padding:18px 12px!important;position:fixed!important;left:0!important;top:0!important;bottom:0!important;height:100vh!important;min-height:100vh!important;z-index:1000!important;overflow-y:auto!important}
+    body.bt-technician-simple .main-area{margin-left:220px!important;padding:28px 34px!important;min-height:100vh!important;width:auto!important}
     body.bt-technician-simple .sidebar-nav{gap:5px}
     body.bt-technician-simple .tech-home{max-width:980px;margin:0 auto}
     body.bt-technician-simple .tech-welcome{margin-bottom:26px}
@@ -32,7 +33,14 @@
     body.bt-technician-simple #main-content .page-title-row p{display:none}
     body.bt-technician-simple #main-content .page-title-row{margin-bottom:18px}
     body.bt-technician-simple .tech-hidden{display:none!important}
-    @media(max-width:800px){body.bt-technician-simple .sidebar{width:0!important;padding:0!important;overflow:hidden}body.bt-technician-simple .main-area{margin-left:0!important;padding:22px 16px}.bt-mobile-menu{z-index:2000!important}body.bt-technician-simple .tech-actions{grid-template-columns:1fr}}
+    /* Nunca exigir foto no apontamento de medidor/horímetro. A foto continua disponível, mas opcional. */
+    body.bt-technician-simple .utility-photo-required,
+    body.bt-technician-simple .meter-photo-required{display:none!important}
+    @media(max-width:800px){
+      body.bt-technician-simple .sidebar{width:220px!important;padding:18px 10px!important}
+      body.bt-technician-simple .main-area{margin-left:220px!important;padding:20px 16px!important;min-width:calc(100vw - 220px)!important}
+      body.bt-technician-simple .tech-actions{grid-template-columns:1fr}
+    }
   `;
   document.head.appendChild(css);
 
@@ -41,7 +49,7 @@
       if(typeof PROFILES==='undefined')return;
       const p=PROFILES.find(x=>x.id==='tecnico');if(!p)return;
       p.permissoes=p.permissoes||{};
-      p.permissoes.almoxarifado=Object.assign({},p.permissoes.almoxarifado,{acesso:true,solicitacoes:true,familias:false,scm_acesso:true,scm_gestao:false,scm_aprovacao:false});
+      p.permissoes.almoxarifado=Object.assign({},p.permissoes.almoxarifado,{acesso:true,solicitacoes:true,familias:true,scm_acesso:true,scm_gestao:false,scm_aprovacao:false});
       p.permissoes.pcm={acesso:false};
       p.permissoes.utilidades={acesso:true};
       if(typeof saveProfiles==='function')saveProfiles(PROFILES);
@@ -59,7 +67,10 @@
         const id=b.getAttribute('data-nav');
         if(!allowed.includes(id)||/pcm|admin|trein/i.test(id))b.classList.add('tech-hidden');
       });
-      $$('[data-group]',n).forEach(b=>{if(b.getAttribute('data-group')!=='grp_almoxarifado')b.classList.add('tech-hidden')});
+      $$('[data-group]',n).forEach(b=>{
+        const id=b.getAttribute('data-group');
+        if(id!=='grp_almoxarifado'&&id!=='grp_utilidades')b.classList.add('tech-hidden');
+      });
       sidebarBuilt=true;
     }catch(e){console.warn('[BIOTROP] tech sidebar',e)}
   }
@@ -71,12 +82,10 @@
     main.innerHTML=`<div class="tech-home">
       <div class="tech-welcome"><h1>Olá, ${esc(state()?.currentUser?.nome||'Técnico')}.</h1><p>Escolha o que você precisa registrar.</p></div>
       <div class="tech-actions">
-        <button class="tech-action" type="button" data-tech-action="reading"><div class="ico">▣</div><strong>Registrar leitura</strong><span>Água, gás, energia e horímetros.</span></button>
-        <button class="tech-action" type="button" data-tech-action="hourmeter"><div class="ico">◷</div><strong>Registrar horímetro</strong><span>Informe a leitura e fotografe o marcador.</span></button>
-        <button class="tech-action" type="button" data-tech-action="material"><div class="ico">▤</div><strong>Solicitar material</strong><span>Faça uma solicitação para o Almoxarifado.</span></button>
-        <button class="tech-action" type="button" data-tech-action="utility"><div class="ico">⌁</div><strong>Utilidades</strong><span>Acesse os medidores e registre a leitura.</span></button>
+        <button class="tech-action" type="button" data-tech-action="reading"><div class="ico">▣</div><strong>Registrar leitura</strong><span>Água, gás e energia.</span></button>
+        <button class="tech-action" type="button" data-tech-action="hourmeter"><div class="ico">◷</div><strong>Registrar horímetro</strong><span>Informe a leitura do equipamento.</span></button>
+        <button class="tech-action" type="button" data-tech-action="material"><div class="ico">▤</div><strong>Solicitar material</strong><span>Abra as listas de materiais e faça sua SC.</span></button>
       </div>
-      <div class="tech-quick"><div><b>Apontamento rápido</b><small>Abra a medição sem procurar no menu.</small></div><button type="button" data-tech-action="reading">Registrar agora</button></div>
     </div>`;
   }
 
@@ -88,11 +97,37 @@
     const timer=setInterval(()=>{tries++;const b=document.querySelector('[data-utility-open]');if(b){clearInterval(timer);b.click()}if(tries>=35)clearInterval(timer)},150);
   }
 
+  /* Remove required da foto somente quando o usuário está no módulo de utilidades.
+     Não remove upload de materiais/SCs nem altera as fotos já salvas. */
+  function makeMeterPhotoOptional(){
+    if(!isTech()||state()?.activeArea!=='utilidades')return;
+    const candidates=$$('input[type="file"]');
+    candidates.forEach(input=>{
+      const box=input.closest('form,.modal,.modal-backdrop,[role="dialog"],section,div');
+      const text=(box?.innerText||'').toLowerCase();
+      const utilityContext=/medidor|horímetro|horimetro|leitura|utilidade/.test(text);
+      const photoContext=/foto|imagem|marcador|comprovante/.test(text);
+      if(utilityContext&&photoContext){
+        input.removeAttribute('required');
+        input.required=false;
+        input.setCustomValidity('');
+        input.setAttribute('aria-required','false');
+        const label=input.closest('label');
+        if(label)label.querySelectorAll('span,strong,small').forEach(el=>{el.textContent=el.textContent.replace(/\*\s*obrigat[óo]ri[oa]?/ig,'').replace(/obrigat[óo]ri[oa]?/ig,'opcional')});
+      }
+    });
+    $$('label,[class*="photo"],[class*="foto"]').forEach(el=>{
+      if(/foto.*(medidor|leitura|marcador)|medidor.*foto|foto.*hor[ií]metro/i.test(el.innerText||'')){
+        el.innerHTML=el.innerHTML.replace(/obrigat[óo]ri[oa]?/ig,'opcional').replace(/\*\s*(?=<)/g,'');
+      }
+    });
+  }
+
   document.addEventListener('click',e=>{
     const b=e.target.closest?.('[data-tech-action]');if(!b||!isTech())return;
     e.preventDefault();e.stopPropagation();
     const a=b.getAttribute('data-tech-action');
-    if(a==='reading'||a==='hourmeter'||a==='utility')openReading();
+    if(a==='reading'||a==='hourmeter')openReading();
     else if(a==='material')nav('almoxarifado');
   },true);
 
@@ -106,6 +141,7 @@
       rebuildSidebar();
       renderHome();
       resetHomeMarker();
+      makeMeterPhotoOptional();
     }finally{applying=false}
   }
 
@@ -115,7 +151,8 @@
     const s=state();const key=(s?.currentUser?.id||'')+'|'+(s?.activeArea||'');
     if(key!==lastKey){lastKey=key;sidebarBuilt=false;setTimeout(apply,80)}
     else if(!document.body.classList.contains('bt-technician-simple'))apply();
+    if(s?.activeArea==='utilidades')makeMeterPhotoOptional();
   };
-  const start=()=>{tick();setInterval(tick,1000)};
+  const start=()=>{tick();setInterval(tick,1000);new MutationObserver(()=>{if(isTech())makeMeterPhotoOptional()}).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['required']})};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
