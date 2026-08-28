@@ -1047,9 +1047,6 @@
     document.head.appendChild(style);
   }
 
-  injectStyles();
-  installOverrides();
-
   window.BIOTROP_PRODUCTION_V2 = {
     state,
     hasPermission: has,
@@ -1058,6 +1055,9 @@
     openReading,
     openMeterEditor
   };
+
+  try { injectStyles(); } catch (error) { console.warn('[BIOTROP V2] CSS init failed:', error); }
+  try { installOverrides(); } catch (error) { console.warn('[BIOTROP V2] Optional startup override failed:', error); }
 
   if (!client) {
     window.addEventListener('DOMContentLoaded', () => {
