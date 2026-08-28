@@ -1,0 +1,52 @@
+name: Apply technician interface
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-app:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Inject technician interface
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('app.html')
+          s = p.read_text(encoding='utf-8')
+          marker = '<script src="./assets/js/technician-simple-mode-v1.js"></script>'
+          anchors = [
+              '<script src="./assets/js/biotrop-production-v2.js"></script>',
+              '<script src="./assets/js/biotrop-business-rules.js"></script>'
+          ]
+          if marker not in s:
+              for anchor in anchors:
+                  if anchor in s:
+                      s = s.replace(anchor, anchor + '\n' + marker, 1)
+                      break
+              else:
+                  raise SystemExit('Nenhum script âncora encontrado em app.html')
+              p.write_text(s, encoding='utf-8')
+              print('Interface técnica injetada.')
+          else:
+              print('Interface técnica já está carregada.')
+
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.html
+          if git diff --cached --quiet; then
+            echo "Sem alterações."
+            exit 0
+          fi
+          git commit -m "feat: aplicar interface tecnica simples"
+          git push
