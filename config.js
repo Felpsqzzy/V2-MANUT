@@ -218,3 +218,78 @@ window.BIOTROP_CONFIG = Object.freeze({
     bootRecovery();
   }
 })();
+
+/* ================= TÉCNICO · UTILIDADES SIMPLIFICADAS ================= */
+(function () {
+  'use strict';
+
+  function installTechnicianUtilitiesMode() {
+    const style = document.createElement('style');
+    style.id = 'biotrop-technician-utilities-style';
+    style.textContent = `
+      .utility-control-room.tech-utilities-mode { max-width: 980px !important; padding: 18px 0 40px !important; }
+      .tech-utilities-mode .utility-command-header,
+      .tech-utilities-mode .utility-summary-row,
+      .tech-utilities-mode .utility-main-grid,
+      .tech-utilities-mode .utility-history-card,
+      .tech-utilities-mode .utility-side-stack { display: none !important; }
+      .tech-utilities-mode .tech-simple-header { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:18px; }
+      .tech-utilities-mode .tech-simple-header h1 { margin:0; color:#17332b; font-size:24px; font-weight:800; }
+      .tech-utilities-mode .tech-simple-header p { margin:5px 0 0; color:#6b7a75; font-size:13px; }
+      .tech-utilities-mode .tech-simple-badge { background:#eef8f3; color:#176449; border-radius:999px; padding:8px 12px; font-size:12px; font-weight:800; white-space:nowrap; }
+      .tech-utilities-mode .biotrop-v2-unit-group { background:#fff; border:1px solid #e7f0ec; border-radius:16px; padding:16px; margin-bottom:14px; box-shadow:0 5px 18px rgba(0,60,65,.04); }
+      .tech-utilities-mode .utility-section-title { margin-bottom:12px !important; }
+      .tech-utilities-mode .utility-section-title .industrial-eyebrow { display:none; }
+      .tech-utilities-mode .utility-section-title h2 { font-size:16px !important; margin:0 !important; }
+      .tech-utilities-mode .utility-section-title .badge { display:none; }
+      .tech-utilities-mode .biotrop-v2-type-group { margin-top:12px; }
+      .tech-utilities-mode .biotrop-v2-type-group h3 { font-size:13px; color:#4d635a; margin:0 0 8px; display:flex; align-items:center; gap:6px; }
+      .tech-utilities-mode .utility-meter-grid { grid-template-columns:repeat(auto-fit,minmax(230px,1fr)) !important; gap:10px !important; }
+      .tech-utilities-mode .utility-meter-card { padding:14px !important; border-radius:13px !important; box-shadow:none !important; }
+      .tech-utilities-mode .utility-meter-card .utility-meter-top { margin-bottom:8px; }
+      .tech-utilities-mode .utility-meter-card .utility-type { font-size:10px !important; }
+      .tech-utilities-mode .utility-meter-card h3 { font-size:14px !important; margin:3px 0 !important; }
+      .tech-utilities-mode .utility-meter-card .utility-reading-main { padding:8px 0 !important; }
+      .tech-utilities-mode .utility-meter-card .utility-meter-footer { font-size:11px !important; margin-bottom:10px !important; }
+      .tech-utilities-mode .utility-meter-card .utility-meter-footer span:last-child { display:none; }
+      .tech-utilities-mode .utility-meter-card .utility-status { font-size:9px !important; padding:4px 7px !important; }
+      .tech-utilities-mode .utility-meter-actions { margin-top:8px !important; }
+      .tech-utilities-mode .utility-meter-actions .t-btn.green { width:100%; justify-content:center; padding:11px 14px !important; font-size:13px !important; border-radius:10px !important; }
+      .tech-utilities-mode .utility-meter-actions > span:empty { display:none; }
+      @media (max-width:700px){
+        .utility-control-room.tech-utilities-mode { padding:12px 0 28px !important; }
+        .tech-utilities-mode .tech-simple-header { align-items:flex-start; }
+        .tech-utilities-mode .tech-simple-header h1 { font-size:20px; }
+        .tech-utilities-mode .tech-simple-badge { font-size:10px; padding:7px 9px; }
+        .tech-utilities-mode .biotrop-v2-unit-group { padding:12px; }
+        .tech-utilities-mode .utility-meter-grid { grid-template-columns:1fr !important; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function simplifyUtilities() {
+    const root = document.querySelector('.utility-control-room');
+    if (!root) return;
+    if (document.querySelector('#utility-new-meter') || document.querySelector('.biotrop-v2-meter-admin')) return;
+    if (!document.querySelector('[data-v2-reading]')) return;
+
+    root.classList.add('tech-utilities-mode');
+    if (!root.querySelector('.tech-simple-header')) {
+      const header = document.createElement('div');
+      header.className = 'tech-simple-header';
+      header.innerHTML = '<div><h1>Apontamento de Utilidades</h1><p>Selecione o medidor e registre a leitura.</p></div><span class="tech-simple-badge">Apontamento</span>';
+      root.insertBefore(header, root.firstElementChild);
+    }
+  }
+
+  function boot() {
+    installTechnicianUtilitiesMode();
+    const observer = new MutationObserver(() => simplifyUtilities());
+    observer.observe(document.body, { childList: true, subtree: true });
+    simplifyUtilities();
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once:true });
+  else boot();
+})();
