@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
 import { requireAuth, requirePermission } from './authMiddleware';
 
-const app = express();
+export const app = express();
 const port = Number(process.env.PORT || 3000);
 const uploadDir = path.resolve(process.env.UPLOAD_DIR || './uploads');
 const maxUploadBytes = Number(process.env.MAX_UPLOAD_BYTES || 100 * 1024 * 1024);
@@ -244,6 +244,10 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   return res.status(500).json({ error: message });
 });
 
-app.listen(port, () => {
-  console.log(`BIOTROP API ouvindo em http://localhost:${port}`);
-});
+export default app;
+
+if (!process.env.VERCEL) {
+  app.listen(port, () => {
+    console.log(`BIOTROP API ouvindo em http://localhost:${port}`);
+  });
+}
