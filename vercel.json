@@ -1,6 +1,20 @@
 {
-  "buildCommand": null,
-  "outputDirectory": ".",
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "builds": [
+    {
+      "src": "server/index.ts",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "server/index.ts"
+    },
+    {
+      "handle": "filesystem"
+    }
+  ],
   "cleanUrls": true,
   "trailingSlash": false,
   "headers": [
