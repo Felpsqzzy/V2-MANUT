@@ -6,6 +6,7 @@
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fmt = v => Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 3 });
   const icon = (name, size = 22) => typeof window.icon === 'function' ? window.icon(name, size) : '';
+
   let technician = false;
   let ctx = null;
   let step = 'home';
@@ -14,6 +15,52 @@
   let selectedMeter = null;
   let optionalPhoto = null;
   let busy = false;
+  let materialCategory = null;
+  let materialType = null;
+
+  const MATERIALS = {
+    'Fixação': ['Parafuso','Porca','Arruela','Bucha','Chumbador','Prisioneiro','Barra roscada'],
+    'Tubulação e Conexões': ['Tubo','Curva','Tê','Redução','Niple','União','Flange','Adaptador','Tampão','Conexão sanitária'],
+    'Válvulas': ['Válvula diafragma','Válvula esfera','Válvula borboleta','Válvula gaveta','Válvula retenção','Válvula solenoide','Válvula de controle','Válvula pneumática'],
+    'Vedação': ['Junta','O-ring','Retentor','Selo mecânico','Gaxeta','Diafragma','Anel de vedação'],
+    'Elétrica': ['Motor elétrico','Cabo','Disjuntor','Fusível','Contator','Relé','Inversor','Fonte','Tomada','Sensor','Chave','Botoeira'],
+    'Pneumática': ['Cilindro','Válvula pneumática','Regulador','Filtro','Lubrificador','Mangueira','Conexão pneumática','Silenciador'],
+    'Mecânica': ['Rolamento','Mancal','Engrenagem','Correia','Polia','Corrente','Roda dentada','Acoplamento','Eixo','Bucha','Retentor'],
+    'Lubrificação e Consumíveis': ['Óleo','Graxa','Fluido hidráulico','Desengripante','Solvente','Produto de limpeza','Pasta lubrificante'],
+    'Solda e Fabricação': ['Eletrodo','Arame de solda','Disco de corte','Disco de desbaste','Disco flap','Escova','Gás industrial'],
+    'Ferramentas e Acessórios': ['Chave','Alicate','Soquete','Broca','Macho','Cossinete','Lâmina','Ferramenta de corte']
+  };
+
+  const MATERIAL_FIELDS = {
+    'Parafuso': ['Diâmetro','Comprimento','Tipo de rosca','Passo da rosca','Tipo de cabeça','Formato da cabeça','Sextavado','Tipo de acionamento','Material','Classe de resistência','Acabamento','Norma','Unidade','Fabricante','Código fabricante','Aplicação','Observação'],
+    'Porca': ['Diâmetro','Tipo de rosca','Passo','Tipo de porca','Altura','Sextavado','Material','Classe de resistência','Acabamento','Norma','Unidade','Aplicação','Observação'],
+    'Arruela': ['Diâmetro interno','Diâmetro externo','Espessura','Tipo','Material','Acabamento','Norma','Unidade','Aplicação','Observação'],
+    'Bucha': ['Diâmetro','Comprimento','Tipo','Material','Aplicação','Unidade','Fabricante','Código fabricante','Observação'],
+    'Chumbador': ['Diâmetro','Comprimento','Tipo','Material','Acabamento','Norma','Unidade','Aplicação','Observação'],
+    'Prisioneiro': ['Diâmetro','Comprimento','Tipo de rosca','Passo','Material','Classe de resistência','Acabamento','Norma','Unidade','Aplicação','Observação'],
+    'Barra roscada': ['Diâmetro','Comprimento','Tipo de rosca','Passo','Material','Classe de resistência','Acabamento','Norma','Unidade','Aplicação','Observação'],
+    'Tubo': ['Diâmetro nominal','Diâmetro externo','Espessura','Comprimento','Material','Schedule','Norma','Unidade','Aplicação','Observação'],
+    'Curva': ['Diâmetro','Ângulo','Raio','Material','Conexão','Norma','Unidade','Aplicação','Observação'],
+    'Tê': ['Diâmetro principal','Diâmetro derivação','Material','Conexão','Norma','Unidade','Aplicação','Observação'],
+    'Redução': ['Diâmetro maior','Diâmetro menor','Tipo','Material','Conexão','Norma','Unidade','Aplicação','Observação'],
+    'Niple': ['Diâmetro','Comprimento','Tipo de rosca','Material','Norma','Unidade','Aplicação','Observação'],
+    'União': ['Diâmetro','Tipo de conexão','Material','Norma','Unidade','Aplicação','Observação'],
+    'Flange': ['Diâmetro','Tipo','Classe','Material','Furação','Norma','Unidade','Aplicação','Observação'],
+    'Adaptador': ['Diâmetro entrada','Diâmetro saída','Tipo','Material','Conexão','Norma','Unidade','Aplicação','Observação'],
+    'Tampão': ['Diâmetro','Tipo','Material','Conexão','Norma','Unidade','Aplicação','Observação'],
+    'Conexão sanitária': ['Diâmetro','Tipo','Material','Acabamento','Norma','Conexão','Unidade','Aplicação','Observação'],
+    'Válvula diafragma': ['Diâmetro','Tipo de acionamento','Material corpo','Material diafragma','Conexão','Pressão','Temperatura','Norma','Unidade','Aplicação','Observação'],
+    'Válvula esfera': ['Diâmetro','Tipo','Material corpo','Material vedação','Conexão','Pressão','Temperatura','Acionamento','Norma','Unidade','Aplicação','Observação'],
+    'Válvula borboleta': ['Diâmetro','Tipo','Material corpo','Material vedação','Conexão','Pressão','Temperatura','Acionamento','Norma','Unidade','Aplicação','Observação'],
+    'Válvula gaveta': ['Diâmetro','Tipo','Material corpo','Material vedação','Conexão','Pressão','Temperatura','Acionamento','Norma','Unidade','Aplicação','Observação'],
+    'Válvula retenção': ['Diâmetro','Tipo','Material corpo','Material vedação','Conexão','Pressão','Temperatura','Norma','Unidade','Aplicação','Observação'],
+    'Válvula solenoide': ['Diâmetro','Tensão','Tipo de rosca','Material corpo','Pressão','Temperatura','Fluido','Norma','Unidade','Aplicação','Observação'],
+    'Válvula de controle': ['Diâmetro','Tipo','Material corpo','Conexão','Pressão','Temperatura','Atuador','Sinal','Norma','Unidade','Aplicação','Observação'],
+    'Válvula pneumática': ['Diâmetro','Tipo','Material','Pressão de trabalho','Conexão','Atuador','Norma','Unidade','Aplicação','Observação'],
+    'Macho': ['Diâmetro','Passo','Tipo de rosca','Quantidade de canais','Tipo','Material','Comprimento total','Comprimento útil','Entrada','Norma','Aplicação','Fabricante','Código'],
+    'Rolamento': ['Código','Diâmetro interno','Diâmetro externo','Largura','Tipo','Vedação','Folga','Carga','Fabricante','Unidade','Aplicação','Observação'],
+    'Motor elétrico': ['Potência','Tensão','Corrente','Frequência','Rotação','Carcaça','Grau de proteção','Classe de isolamento','Rendimento','Fabricante','Código','Unidade','Aplicação','Observação']
+  };
 
   async function init() {
     try {
@@ -42,6 +89,8 @@
       const style = document.createElement('style');
       style.id = 'utility-tech-css';
       style.textContent = `
+        .tech-mode .sidebar{position:fixed;left:0;top:0;bottom:0;height:100vh;box-sizing:border-box;z-index:100;overflow-y:auto}
+        .tech-mode .main-area{margin-left:240px;width:calc(100% - 240px);min-height:100vh}
         .tech-shell-home{max-width:980px;margin:0 auto;padding:36px 28px 60px}
         .tech-greeting{font-size:15px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#0a8f70;margin-bottom:10px}
         .tech-home-title{font-size:clamp(36px,5vw,62px);line-height:1.02;margin:0;color:#073f42;letter-spacing:-.04em}
@@ -64,8 +113,9 @@
         .tech-submit{margin-top:16px;width:100%;border:0;border-radius:14px;background:#007c63;color:#fff;padding:15px;font-size:16px;font-weight:900;cursor:pointer}.tech-submit:disabled{opacity:.55;cursor:not-allowed}
         .tech-photo{margin-top:15px;font-size:13px;color:#63736e}.tech-photo input{margin-top:8px;width:100%}
         .tech-empty{padding:30px;background:#f7faf9;border-radius:16px;color:#687873}
-        @media(max-width:760px){.tech-list{grid-template-columns:1fr}.tech-utility-wrap,.tech-shell-home{padding:24px 16px 40px}.tech-title{font-size:34px}.tech-home-title{font-size:42px}}
-        @media(min-width:769px){.tech-mode .sidebar{position:fixed;left:0;top:0;height:100vh;box-sizing:border-box;z-index:50}.tech-mode .main-area{margin-left:240px;width:calc(100% - 240px)}}
+        .sci-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.sci-field{display:flex;flex-direction:column;gap:6px}.sci-field.full{grid-column:1/-1}.sci-field label{font-size:12px;font-weight:800;color:#53635f}.sci-field input,.sci-field textarea{border:1px solid #d4e2dd;border-radius:12px;padding:12px;font:inherit;outline:none}.sci-field textarea{min-height:90px;resize:vertical}.sci-field input:focus,.sci-field textarea:focus{border-color:#2aaa87;box-shadow:0 0 0 3px rgba(42,170,135,.1)}
+        .sci-actions{display:flex;gap:10px;margin-top:18px}.sci-note{font-size:12px;color:#778680;margin-top:12px}
+        @media(max-width:760px){.tech-mode .sidebar{width:210px}.tech-mode .main-area{margin-left:210px;width:calc(100% - 210px)}.tech-list{grid-template-columns:1fr}.tech-utility-wrap,.tech-shell-home{padding:24px 16px 40px}.tech-title{font-size:34px}.tech-home-title{font-size:42px}.sci-fields{grid-template-columns:1fr}.sci-field.full{grid-column:auto}}
       `;
       document.head.appendChild(style);
     }
@@ -74,13 +124,15 @@
     if (nav) {
       nav.innerHTML = `
         <button class="nav-item active" data-tech-nav="home">${icon('home',18)}<span>Início</span></button>
-        <button class="nav-item" data-tech-nav="utilidades">${icon('gauge',18)}<span>Apontamentos</span></button>`;
+        <button class="nav-item" data-tech-nav="utilidades">${icon('gauge',18)}<span>Apontamentos</span></button>
+        <button class="nav-item" data-tech-nav="materiais">${icon('box',18)}<span>Solicitar material</span></button>`;
       nav.onclick = e => {
         const b = e.target.closest('[data-tech-nav]');
         if (!b) return;
         const target = b.dataset.techNav;
-        step = target === 'home' ? 'home' : 'type';
+        step = target === 'home' ? 'home' : target === 'utilidades' ? 'type' : 'material-category';
         selectedType = selectedUnit = selectedMeter = null;
+        materialCategory = materialType = null;
         updateTechNav(target);
         routeRender();
       };
@@ -97,7 +149,9 @@
     if (!technician) return;
     const main = document.getElementById('main-content');
     if (!main) return;
-    main.innerHTML = step === 'home' ? renderHome() : renderUtility();
+    if (step === 'home') main.innerHTML = renderHome();
+    else if (step.startsWith('material-')) main.innerHTML = renderMaterials();
+    else main.innerHTML = renderUtility();
     bind();
   }
 
@@ -105,12 +159,7 @@
     const name = STATE.currentUser?.nome?.split(' ')[0] || 'Técnico';
     const hour = new Date().getHours();
     const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
-    return `<section class="tech-shell-home">
-      <div class="tech-greeting">${greeting}, ${esc(name)}</div>
-      <h1 class="tech-home-title">Tudo pronto para o apontamento?</h1>
-      <p class="tech-home-sub">Registre a leitura da água, gás, energia ou horímetro da planta de forma rápida e simples.</p>
-      <button class="tech-start" data-action="start"><strong>Fazer apontamento</strong><span>Escolher utilidade → CAMM → medidor → leitura</span></button>
-    </section>`;
+    return `<section class="tech-shell-home"><div class="tech-greeting">${greeting}, ${esc(name)}</div><h1 class="tech-home-title">Tudo pronto para o apontamento?</h1><p class="tech-home-sub">Registre uma leitura ou solicite um material de manutenção de forma rápida.</p><button class="tech-start" data-action="start"><strong>Fazer apontamento</strong><span>Escolher utilidade → CAMM → medidor → leitura</span></button></section>`;
   }
 
   function unitsForType(type) {
@@ -133,6 +182,18 @@
     return `<section class="tech-utility-wrap"><button class="tech-back" data-back="meter">← Voltar para medidores</button><div class="tech-eyebrow">${esc(selectedUnit?.name || '')}</div><h1 class="tech-title">Registrar leitura</h1><p class="tech-sub">${esc(selectedMeter?.name || '')}</p><div class="tech-card"><div class="tech-label">Última leitura</div><div class="tech-last">${last===null||last===undefined?'Primeiro apontamento':`${fmt(last)} ${esc(selectedMeter.unit || '')}`}</div><label class="tech-label" for="tech-reading">Nova leitura</label><input id="tech-reading" class="tech-input" type="number" step="any" min="0" inputmode="decimal" placeholder="Digite a leitura"><div class="tech-photo">Foto da medição <strong>(opcional)</strong><input id="tech-photo" type="file" accept="image/*" capture="environment"></div><button class="tech-submit" data-action="save">Salvar apontamento</button></div></section>`;
   }
 
+  function renderMaterials() {
+    if (step === 'material-category') {
+      return `<section class="tech-utility-wrap"><div class="tech-eyebrow">Almoxarifado / SCI</div><h1 class="tech-title">Solicitar material</h1><p class="tech-sub">Escolha a categoria do material que você precisa.</p><div class="tech-list">${Object.keys(MATERIALS).map(cat=>`<button class="tech-option" data-material-category="${esc(cat)}"><span class="tech-icon">${icon('box',22)}</span><span><strong>${esc(cat)}</strong><small>${MATERIALS[cat].length} tipos de material</small></span></button>`).join('')}</div></section>`;
+    }
+    if (step === 'material-type') {
+      const items = MATERIALS[materialCategory] || [];
+      return `<section class="tech-utility-wrap"><button class="tech-back" data-material-back="category">← Voltar</button><div class="tech-eyebrow">${esc(materialCategory)}</div><h1 class="tech-title">Escolha o material</h1><p class="tech-sub">Selecione o item para preencher a solicitação.</p><div class="tech-list">${items.map(item=>`<button class="tech-option" data-material-type="${esc(item)}"><span class="tech-icon">${icon('box',22)}</span><span><strong>${esc(item)}</strong><small>Ver especificações</small></span></button>`).join('')}</div></section>`;
+    }
+    const fields = MATERIAL_FIELDS[materialType] || ['Descrição','Unidade','Quantidade','Aplicação','Local de utilização','Justificativa','Observação'];
+    return `<section class="tech-utility-wrap"><button class="tech-back" data-material-back="type">← Voltar para materiais</button><div class="tech-eyebrow">${esc(materialCategory)} · ${esc(materialType)}</div><h1 class="tech-title">Especificações</h1><p class="tech-sub">Preencha os dados necessários para a SC.</p><div class="tech-card" style="max-width:900px"><div class="sci-fields">${fields.map((f,i)=>`<div class="sci-field ${/observa|justificativa|aplica|local/i.test(f)?'full':''}"><label>${esc(f)}</label>${/observa|justificativa|aplica|local/i.test(f)?`<textarea data-sci-field="${esc(f)}" placeholder="Informe ${esc(f.toLowerCase())}"></textarea>`:`<input data-sci-field="${esc(f)}" placeholder="Informe ${esc(f.toLowerCase())}">`}</div>`).join('')}</div><div class="sci-actions"><button class="ghost-btn" data-material-back="type">Cancelar</button><button class="primary-btn" data-material-submit>Continuar SC</button></div><div class="sci-note">A solicitação mantém a estrutura dinâmica por categoria e tipo de material.</div></div></section>`;
+  }
+
   function labelType(t){return ({agua:'Água',gas:'Gás',energia:'Energia',horimetro:'Horímetro'})[t] || t;}
 
   function bind() {
@@ -143,6 +204,10 @@
     document.querySelectorAll('[data-back]').forEach(b=>b.addEventListener('click',()=>{step=b.dataset.back;routeRender();}));
     document.querySelector('[data-action="save"]')?.addEventListener('click',saveReading);
     document.querySelector('#tech-photo')?.addEventListener('change',e=>{optionalPhoto=e.target.files?.[0] || null;});
+    document.querySelectorAll('[data-material-category]').forEach(b=>b.addEventListener('click',()=>{materialCategory=b.dataset.materialCategory;step='material-type';routeRender();}));
+    document.querySelectorAll('[data-material-type]').forEach(b=>b.addEventListener('click',()=>{materialType=b.dataset.materialType;step='material-fields';routeRender();}));
+    document.querySelectorAll('[data-material-back]').forEach(b=>b.addEventListener('click',()=>{step=b.dataset.materialBack==='category'?'material-category':b.dataset.materialBack==='type'?'material-type':'material-category';routeRender();}));
+    document.querySelector('[data-material-submit]')?.addEventListener('click',()=>{alert('Especificações preenchidas. A SC está pronta para seguir para o fluxo de aprovação.');});
   }
 
   async function saveReading(){
