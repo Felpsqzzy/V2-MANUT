@@ -56,8 +56,14 @@ window.BIOTROP_CONFIG = Object.freeze({
       if(typeof saveFamilies==='function'&&!saveFamilies.__biotropV13){const old=saveFamilies;const wrapped=function(v){try{localStorage.setItem('biotrop_families_v1',JSON.stringify(v))}catch(_){}return old(v)};wrapped.__biotropV13=true;saveFamilies=wrapped}
     }catch(e){console.warn('[BIOTROP] SCI:',e)}
   }
-  function installSidebar(){const sb=document.getElementById('sidebar');if(!sb||innerWidth<769)return;if(!sb.querySelector('.biotrop-sidebar-toggle')){const b=document.createElement('button');b.type='button';b.className='biotrop-sidebar-toggle';b.title='Recolher/expandir menu';b.setAttribute('aria-label','Recolher ou expandir menu lateral');b.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>';b.onclick=()=>{document.body.classList.toggle('biotrop-sidebar-collapsed');try{localStorage.setItem('biotrop_sidebar_collapsed',document.body.classList.contains('biotrop-sidebar-collapsed')?'1':'0')}catch(_){}};sb.appendChild(b)}try{if(localStorage.getItem('biotrop_sidebar_collapsed')==='1')document.body.classList.add('biotrop-sidebar-collapsed')}catch(_){}
+  function installSidebar(){const sb=document.getElementById('sidebar');if(!sb||innerWidth<769)return;if(!sb.querySelector('.biotrop-sidebar-toggle')){const b=document.createElement('button');b.type='button';b.className='biotrop-sidebar-toggle';b.title='Recolher/expandir menu';b.setAttribute('aria-label','Recolher ou expandir menu lateral');b.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>';b.onclick=()=>{document.body.classList.toggle('biotrop-sidebar-collapsed');try{localStorage.setItem('biotrop_sidebar_collapsed',document.body.classList.contains('biotrop-sidebar-collapsed')?'1':'0')}catch(_) {}};sb.appendChild(b)}try{if(localStorage.getItem('biotrop_sidebar_collapsed')==='1')document.body.classList.add('biotrop-sidebar-collapsed')}catch(_){}
   }
   function boot(){installStyle();let n=0;const t=setInterval(()=>{n++;restoreFamilies();installSidebar();if(n>80)clearInterval(t)},100);new MutationObserver(()=>{restoreFamilies();installSidebar()}).observe(document.body,{childList:true,subtree:true})}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+
+/* Carrega o módulo PCM/Almoxarifado sem alterar a aplicação principal. */
+(function(){
+  function load(){if(document.querySelector('script[data-biotrop-pcm]'))return;const s=document.createElement('script');s.src='./pcm-module.js?v=2';s.async=true;s.dataset.biotropPcm='1';document.head.appendChild(s)}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load,{once:true});else load();
 })();
