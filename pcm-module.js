@@ -17,6 +17,13 @@
       s.dataset.biotropTrainingV2='1';
       document.head.appendChild(s);
     }
+    if(!document.querySelector('script[data-biotrop-training-v2-fix]')){
+      const s=document.createElement('script');
+      s.src='./assets/js/training-module-v2-fix.js?v=1';
+      s.async=true;
+      s.dataset.biotropTrainingV2Fix='1';
+      document.head.appendChild(s);
+    }
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',load,{once:true});
   else load();
