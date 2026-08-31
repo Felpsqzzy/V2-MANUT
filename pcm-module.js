@@ -8,7 +8,7 @@
   }
   function load(){
     add('./workflow-fix.js?v=3','data-biotrop-workflow-fix');
-    add('./assets/js/almox-live-v1.js?v=1','data-biotrop-almox-live');
+    add('./assets/js/almox-live-v2.js?v=1','data-biotrop-almox-live-v2');
     add('./assets/js/training-module-v2.js?v=1','data-biotrop-training-v2');
     add('./assets/js/training-module-v2-fix.js?v=1','data-biotrop-training-v2-fix');
   }
