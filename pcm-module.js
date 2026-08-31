@@ -1,30 +1,17 @@
 /* BIOTROP PCM — loader seguro.
-   O módulo não intercepta a navegação do menu. A gestão de PCM/SCI/SCM fica em workflow-fix.js. */
+   Gestão PCM/SCI/SCM e o painel live do Almoxarifado são carregados sem substituir o shell principal. */
 (()=>{
   'use strict';
-  function load(){
-    if(!document.querySelector('script[data-biotrop-workflow-fix]')){
-      const s=document.createElement('script');
-      s.src='./workflow-fix.js?v=2';
-      s.async=true;
-      s.dataset.biotropWorkflowFix='1';
-      document.head.appendChild(s);
-    }
-    if(!document.querySelector('script[data-biotrop-training-v2]')){
-      const s=document.createElement('script');
-      s.src='./assets/js/training-module-v2.js?v=1';
-      s.async=true;
-      s.dataset.biotropTrainingV2='1';
-      document.head.appendChild(s);
-    }
-    if(!document.querySelector('script[data-biotrop-training-v2-fix]')){
-      const s=document.createElement('script');
-      s.src='./assets/js/training-module-v2-fix.js?v=1';
-      s.async=true;
-      s.dataset.biotropTrainingV2Fix='1';
-      document.head.appendChild(s);
-    }
+  function add(src,attr){
+    if(document.querySelector(`script[${attr}]`))return;
+    const s=document.createElement('script');s.src=src;s.async=true;s.setAttribute(attr,'1');document.head.appendChild(s);
   }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',load,{once:true});
+  function load(){
+    add('./workflow-fix.js?v=3','data-biotrop-workflow-fix');
+    add('./assets/js/almox-live-v1.js?v=1','data-biotrop-almox-live');
+    add('./assets/js/training-module-v2.js?v=1','data-biotrop-training-v2');
+    add('./assets/js/training-module-v2-fix.js?v=1','data-biotrop-training-v2-fix');
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load,{once:true});
   else load();
 })();
