@@ -1,4 +1,4 @@
-const CACHE = 'biotrop-production-v2-26';
+const CACHE = 'biotrop-production-v2-27';
 const CORE_ASSETS = [
   './app.html',
   './config.js',
@@ -14,14 +14,12 @@ async function appResponseWithTechLayer(request) {
 
   let html = await response.text();
 
-  // Corrige o carregamento das famílias SCI sem alterar o app principal:
-  // o cadastro já possui FAMILIES_SEED, mas loadFamilies estava retornando [].
   html = html.replace(
     'function loadFamilies() {\n  return [];\n}',
     'function loadFamilies() {\n  return FAMILIES_SEED.map(function (f) { return JSON.parse(JSON.stringify(f)); });\n}'
   );
 
-  const injected = html.replace('</body>', '<script src="./utilidades-tech.js?v=26"></script>\n</body>');
+  const injected = html.replace('</body>', '<script src="./utilidades-tech.js?v=27"></script>\n</body>');
   return new Response(injected, {
     status: response.status,
     statusText: response.statusText,
