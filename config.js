@@ -44,7 +44,7 @@ window.BIOTROP_CONFIG = Object.freeze({
   function restoreFamilies(){
     try{
       if(typeof FAMILIES_SEED==='undefined'||typeof FAMILIES==='undefined')return;
-      let saved=null;try{saved=JSON.parse(localStorage.getItem('biotrop_families_v1')||'null')}catch(_){saved=null}
+      let saved=null;try{saved=JSON.parse(localStorage.getItem('biotrop_families_v1')||'null')}catch(_) {saved=null}
       const source=Array.isArray(saved)&&saved.length?saved:FAMILIES_SEED.map(f=>JSON.parse(JSON.stringify(f)));
       FAMILIES=source;
       const select=document.getElementById('sci-familia');
@@ -66,4 +66,13 @@ window.BIOTROP_CONFIG = Object.freeze({
 (function(){
   function load(){if(document.querySelector('script[data-biotrop-pcm]'))return;const s=document.createElement('script');s.src='./pcm-module.js?v=2';s.async=true;s.dataset.biotropPcm='1';document.head.appendChild(s)}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load,{once:true});else load();
+})();
+
+/* FIX V3: carrega o módulo de treinamentos e corrige a ponte com o shell legado. */
+(function(){
+  function load(src, done){if(document.querySelector('script[src*="'+src+'"]')){done?.();return;}const s=document.createElement('script');s.src='./assets/js/'+src+'?v=3';s.async=false;s.onload=done;s.onerror=()=>console.error('[BIOTROP] Falha ao carregar '+src);document.body.appendChild(s)}
+  function boot(){
+    load('training-module-v2.js',()=>load('training-module-v2-fix.js',()=>load('training-runtime-fix-v3.js')));
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
