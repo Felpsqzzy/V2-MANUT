@@ -1,0 +1,46 @@
+name: Ensure training scripts
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  inject-training-scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Inject training scripts into app.html
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('app.html')
+          text = p.read_text(encoding='utf-8')
+          marker = './assets/js/training-runtime-fix-v3.js'
+          if marker not in text:
+              anchor = '<script src="./assets/js/technician-simple-mode-v1.js"></script>'
+              insert = anchor + '\n<script src="./assets/js/training-module-v2.js"></script>\n<script src="./assets/js/training-module-v2-fix.js"></script>\n<script src="./assets/js/training-runtime-fix-v3.js"></script>'
+              if anchor not in text:
+                  raise SystemExit('Anchor de scripts não encontrado em app.html')
+              text = text.replace(anchor, insert, 1)
+              p.write_text(text, encoding='utf-8')
+          else:
+              print('Scripts de treinamento já estão carregados.')
+          PY
+
+      - name: Commit injected scripts
+        run: |
+          if git diff --quiet; then
+            echo 'Nenhuma alteração necessária.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app.html
+          git commit -m 'fix: carregar módulo de treinamentos V3'
+          git push
