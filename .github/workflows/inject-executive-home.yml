@@ -1,0 +1,46 @@
+name: Injetar dashboard executivo
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  inject:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Inserir dashboard executivo no app.html
+        shell: bash
+        run: |
+          set -e
+          SCRIPT='assets/js/executive-home-v3.js?v=20260901'
+          if ! grep -q 'executive-home-v3.js' app.html; then
+            python3 - <<'PY'
+from pathlib import Path
+p=Path('app.html')
+s=p.read_text(encoding='utf-8')
+needle='</body>'
+insert='<script src="./assets/js/executive-home-v3.js?v=20260901"></script>\n'
+if needle not in s:
+    raise SystemExit('app.html sem </body>')
+p.write_text(s.replace(needle,insert+needle,1),encoding='utf-8')
+PY
+          fi
+
+      - name: Commitar somente se houver alteração
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app.html
+          if git diff --cached --quiet; then
+            echo 'Dashboard já estava injetado.'
+            exit 0
+          fi
+          git commit -m 'chore: carrega dashboard executivo v3'
+          git push
