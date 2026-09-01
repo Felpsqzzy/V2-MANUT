@@ -49,6 +49,17 @@
     }
   }
 
+  function loadV4() {
+    if (document.querySelector('script[data-training-academy-v4]')) return;
+    const s = document.createElement('script');
+    s.src = './assets/js/training-academy-v4.js?v=20260901';
+    s.async = false;
+    s.dataset.trainingAcademyV4 = '1';
+    s.onload = () => { repairBindings(); if (st().currentArea === 'treinamentos' && typeof window.navigateTo === 'function') window.navigateTo('treinamentos'); };
+    s.onerror = () => console.error('[BIOTROP] Falha ao carregar training-academy-v4.js');
+    document.body.appendChild(s);
+  }
+
   async function boot() {
     const ready = await wait(() => Boolean(
       window.SB &&
@@ -60,6 +71,7 @@
     repairBindings();
     try {
       await loadTrainingData();
+      loadV4();
       repairBindings();
       const state = window.BIOTROP_PRODUCTION_V2?.state;
       const area = state?.currentArea || state?.currentPage || window.STATE?.currentArea;
