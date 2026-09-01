@@ -8,4 +8,5 @@
   });
   window.addEventListener('biotrop:refresh', () => window.BIOTROP_PRODUCTION_V2?.refreshData(true));
   load('./assets/js/biotrop-modern-management.js').catch(() => {});
+  load('./assets/js/meeting-minimum-functional.js').catch(() => {});
 })();
