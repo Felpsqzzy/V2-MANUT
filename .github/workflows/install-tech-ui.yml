@@ -46,15 +46,14 @@ jobs:
                   s = s.replace(anchor, exec_marker + '\n' + anchor, 1)
                   print('Dashboard executivo v3 injetado.')
 
-          live_marker = '<script src="./assets/js/executive-dashboard-live-v4.js?v=20260901-2"></script>'
-          if live_marker not in s:
+          # Sempre aponta para a versão atual do dashboard live e evita cache do navegador.
+          import re
+          s = re.sub(r'<script src="\./assets/js/executive-dashboard-live-v4\.js\?v=[^"]+"></script>', '<script src="./assets/js/executive-dashboard-live-v4.js?v=20260901-5"></script>', s, count=1)
+          if 'executive-dashboard-live-v4.js?v=20260901-5' not in s:
               anchor = '</body>'
               if anchor not in s:
-                  raise SystemExit('app.html sem </body> para injetar o dashboard live v4')
-              s = s.replace(anchor, live_marker + '\n' + anchor, 1)
-              print('Dashboard executivo live v4 injetado.')
-          else:
-              print('Dashboard executivo live v4 já está carregado.')
+                  raise SystemExit('app.html sem </body> para injetar o dashboard live')
+              s = s.replace(anchor, '<script src="./assets/js/executive-dashboard-live-v4.js?v=20260901-5"></script>\n' + anchor, 1)
 
           p.write_text(s, encoding='utf-8')
 
@@ -67,5 +66,5 @@ jobs:
             echo "Sem alterações."
             exit 0
           fi
-          git commit -m "feat: dashboard live por CAMM e fila de aprovacoes"
+          git commit -m "fix: atualizar dashboard executivo e invalidar cache"
           git push
