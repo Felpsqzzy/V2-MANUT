@@ -16,28 +16,46 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Inject technician interface
+      - name: Inject UI patches
         shell: python
         run: |
           from pathlib import Path
           p = Path('app.html')
           s = p.read_text(encoding='utf-8')
-          marker = '<script src="./assets/js/technician-simple-mode-v1.js"></script>'
-          anchors = [
-              '<script src="./assets/js/biotrop-production-v2.js"></script>',
-              '<script src="./assets/js/biotrop-business-rules.js"></script>'
+
+          patches = [
+              ('<script src="./assets/js/technician-simple-mode-v1.js"></script>',
+               ['<script src="./assets/js/biotrop-production-v2.js"></script>',
+                '<script src="./assets/js/biotrop-business-rules.js"></script>']),
+              ('<script src="./assets/js/executive-home-v3.js?v=20260901"></script>',
+               ['</body>'])
           ]
-          if marker not in s:
-              for anchor in anchors:
+
+          # Interface técnica já existente.
+          tech_marker = patches[0][0]
+          if tech_marker not in s:
+              for anchor in patches[0][1]:
                   if anchor in s:
-                      s = s.replace(anchor, anchor + '\n' + marker, 1)
+                      s = s.replace(anchor, anchor + '\n' + tech_marker, 1)
+                      print('Interface técnica injetada.')
                       break
               else:
-                  raise SystemExit('Nenhum script âncora encontrado em app.html')
-              p.write_text(s, encoding='utf-8')
-              print('Interface técnica injetada.')
+                  print('Interface técnica: marcador/âncora não encontrado; mantendo arquivo.')
           else:
               print('Interface técnica já está carregada.')
+
+          # Novo painel executivo para PCM/gestores/admins.
+          exec_marker = patches[1][0]
+          if exec_marker not in s:
+              anchor = patches[1][1][0]
+              if anchor not in s:
+                  raise SystemExit('app.html sem </body> para injetar o dashboard executivo')
+              s = s.replace(anchor, exec_marker + '\n' + anchor, 1)
+              print('Dashboard executivo v3 injetado.')
+          else:
+              print('Dashboard executivo v3 já está carregado.')
+
+          p.write_text(s, encoding='utf-8')
 
       - name: Commit patch
         run: |
@@ -48,5 +66,5 @@ jobs:
             echo "Sem alterações."
             exit 0
           fi
-          git commit -m "feat: aplicar interface tecnica simples"
+          git commit -m "feat: aplicar painel executivo e interface tecnica"
           git push
