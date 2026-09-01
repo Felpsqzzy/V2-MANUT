@@ -23,37 +23,38 @@ jobs:
           p = Path('app.html')
           s = p.read_text(encoding='utf-8')
 
-          patches = [
-              ('<script src="./assets/js/technician-simple-mode-v1.js"></script>',
-               ['<script src="./assets/js/biotrop-production-v2.js"></script>',
-                '<script src="./assets/js/biotrop-business-rules.js"></script>']),
-              ('<script src="./assets/js/executive-home-v3.js?v=20260901"></script>',
-               ['</body>'])
+          tech_marker = '<script src="./assets/js/technician-simple-mode-v1.js"></script>'
+          tech_anchors = [
+              '<script src="./assets/js/biotrop-production-v2.js"></script>',
+              '<script src="./assets/js/biotrop-business-rules.js"></script>'
           ]
-
-          # Interface técnica já existente.
-          tech_marker = patches[0][0]
           if tech_marker not in s:
-              for anchor in patches[0][1]:
+              for anchor in tech_anchors:
                   if anchor in s:
                       s = s.replace(anchor, anchor + '\n' + tech_marker, 1)
                       print('Interface técnica injetada.')
                       break
               else:
-                  print('Interface técnica: marcador/âncora não encontrado; mantendo arquivo.')
+                  print('Interface técnica: âncora não encontrada; mantendo arquivo.')
           else:
               print('Interface técnica já está carregada.')
 
-          # Novo painel executivo para PCM/gestores/admins.
-          exec_marker = patches[1][0]
+          exec_marker = '<script src="./assets/js/executive-home-v3.js?v=20260901"></script>'
           if exec_marker not in s:
-              anchor = patches[1][1][0]
+              anchor = '</body>'
+              if anchor in s:
+                  s = s.replace(anchor, exec_marker + '\n' + anchor, 1)
+                  print('Dashboard executivo v3 injetado.')
+
+          live_marker = '<script src="./assets/js/executive-dashboard-live-v4.js?v=20260901-2"></script>'
+          if live_marker not in s:
+              anchor = '</body>'
               if anchor not in s:
-                  raise SystemExit('app.html sem </body> para injetar o dashboard executivo')
-              s = s.replace(anchor, exec_marker + '\n' + anchor, 1)
-              print('Dashboard executivo v3 injetado.')
+                  raise SystemExit('app.html sem </body> para injetar o dashboard live v4')
+              s = s.replace(anchor, live_marker + '\n' + anchor, 1)
+              print('Dashboard executivo live v4 injetado.')
           else:
-              print('Dashboard executivo v3 já está carregado.')
+              print('Dashboard executivo live v4 já está carregado.')
 
           p.write_text(s, encoding='utf-8')
 
@@ -66,5 +67,5 @@ jobs:
             echo "Sem alterações."
             exit 0
           fi
-          git commit -m "feat: aplicar painel executivo e interface tecnica"
+          git commit -m "feat: dashboard live por CAMM e fila de aprovacoes"
           git push
