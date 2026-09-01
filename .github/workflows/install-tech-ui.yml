@@ -16,46 +16,40 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Inject UI patches
+      - name: Normalize application scripts
         shell: python
         run: |
           from pathlib import Path
+          import re
+
           p = Path('app.html')
           s = p.read_text(encoding='utf-8')
 
+          # Mantém a interface simples do técnico uma única vez.
           tech_marker = '<script src="./assets/js/technician-simple-mode-v1.js"></script>'
           tech_anchors = [
               '<script src="./assets/js/biotrop-production-v2.js"></script>',
               '<script src="./assets/js/biotrop-business-rules.js"></script>'
           ]
-          if tech_marker not in s:
-              for anchor in tech_anchors:
-                  if anchor in s:
-                      s = s.replace(anchor, anchor + '\n' + tech_marker, 1)
-                      print('Interface técnica injetada.')
-                      break
-              else:
-                  print('Interface técnica: âncora não encontrada; mantendo arquivo.')
-          else:
-              print('Interface técnica já está carregada.')
-
-          exec_marker = '<script src="./assets/js/executive-home-v3.js?v=20260901"></script>'
-          if exec_marker not in s:
-              anchor = '</body>'
+          s = s.replace(tech_marker, '')
+          for anchor in tech_anchors:
               if anchor in s:
-                  s = s.replace(anchor, exec_marker + '\n' + anchor, 1)
-                  print('Dashboard executivo v3 injetado.')
+                  s = s.replace(anchor, anchor + '\n' + tech_marker, 1)
+                  break
 
-          # Sempre aponta para a versão atual do dashboard live e evita cache do navegador.
-          import re
-          s = re.sub(r'<script src="\./assets/js/executive-dashboard-live-v4\.js\?v=[^"]+"></script>', '<script src="./assets/js/executive-dashboard-live-v4.js?v=20260901-5"></script>', s, count=1)
-          if 'executive-dashboard-live-v4.js?v=20260901-5' not in s:
-              anchor = '</body>'
-              if anchor not in s:
-                  raise SystemExit('app.html sem </body> para injetar o dashboard live')
-              s = s.replace(anchor, '<script src="./assets/js/executive-dashboard-live-v4.js?v=20260901-5"></script>\n' + anchor, 1)
+          # O problema de alternância vinha de duas interfaces executivas montadas
+          # ao mesmo tempo (v3 + live v4). Remove todas as versões antigas e deixa
+          # exatamente uma versão live.
+          s = re.sub(r'\s*<script[^>]+executive-home-v3\.js[^>]*></script>', '', s)
+          s = re.sub(r'\s*<script[^>]+executive-dashboard-live-v4\.js[^>]*></script>', '', s)
+
+          live = '<script src="./assets/js/executive-dashboard-live-v4.js?v=20260901-stable"></script>'
+          if '</body>' not in s:
+              raise SystemExit('app.html sem </body>')
+          s = s.replace('</body>', live + '\n</body>', 1)
 
           p.write_text(s, encoding='utf-8')
+          print('Scripts normalizados: uma única visão executiva + uma única interface técnica.')
 
       - name: Commit patch
         run: |
@@ -66,5 +60,5 @@ jobs:
             echo "Sem alterações."
             exit 0
           fi
-          git commit -m "fix: atualizar dashboard executivo e invalidar cache"
+          git commit -m "fix: manter uma única visão do dashboard"
           git push
