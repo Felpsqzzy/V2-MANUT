@@ -21,11 +21,9 @@ jobs:
         run: |
           from pathlib import Path
           import re
-
           p = Path('app.html')
           s = p.read_text(encoding='utf-8')
 
-          # Mantém a interface simples do técnico uma única vez.
           tech_marker = '<script src="./assets/js/technician-simple-mode-v1.js"></script>'
           tech_anchors = [
               '<script src="./assets/js/biotrop-production-v2.js"></script>',
@@ -37,19 +35,13 @@ jobs:
                   s = s.replace(anchor, anchor + '\n' + tech_marker, 1)
                   break
 
-          # O problema de alternância vinha de duas interfaces executivas montadas
-          # ao mesmo tempo (v3 + live v4). Remove todas as versões antigas e deixa
-          # exatamente uma versão live.
+          # NUNCA reinserir o dashboard executivo. Ele estava causando a troca de telas.
           s = re.sub(r'\s*<script[^>]+executive-home-v3\.js[^>]*></script>', '', s)
           s = re.sub(r'\s*<script[^>]+executive-dashboard-live-v4\.js[^>]*></script>', '', s)
-
-          live = '<script src="./assets/js/executive-dashboard-live-v4.js?v=20260901-stable"></script>'
-          if '</body>' not in s:
-              raise SystemExit('app.html sem </body>')
-          s = s.replace('</body>', live + '\n</body>', 1)
+          s = re.sub(r'\s*<script[^>]+role-workspace-v2\.js[^>]*></script>', '', s)
 
           p.write_text(s, encoding='utf-8')
-          print('Scripts normalizados: uma única visão executiva + uma única interface técnica.')
+          print('Interface técnica preservada; loaders executivos removidos definitivamente.')
 
       - name: Commit patch
         run: |
@@ -60,5 +52,5 @@ jobs:
             echo "Sem alterações."
             exit 0
           fi
-          git commit -m "fix: manter uma única visão do dashboard"
+          git commit -m "fix: impedir reinserção do dashboard executivo"
           git push
