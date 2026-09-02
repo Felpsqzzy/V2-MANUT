@@ -1,0 +1,50 @@
+name: Remove executive dashboard
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  remove-dashboard:
+    if: ${{ !contains(github.event.head_commit.message, 'remove: executive dashboard complete') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove dashboard loader from app.html
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('app.html')
+          text = p.read_text(encoding='utf-8')
+          lines = text.splitlines()
+          remove = {
+              '<script src="./assets/js/executive-dashboard-live-v4.js?v=20260901-stable"></script>',
+              '<script src="./assets/js/executive-dashboard-live-v4.js?v=20260901-7"></script>'
+          }
+          new = [line for line in lines if line.strip() not in remove]
+          p.write_text('\n'.join(new) + '\n', encoding='utf-8')
+          PY
+      - name: Remove dashboard autoloaders from app.js
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('app.js')
+          text = p.read_text(encoding='utf-8')
+          for path in [
+            "  load('./assets/js/ui-polish-v6.js?v=7').catch(console.warn);\n",
+            "  load('./assets/js/role-workspace-v2.js?v=2').catch(console.warn);\n",
+            "  load('./assets/js/role-workspace-v2.js?v=4').catch(console.warn);\n",
+            "  load('./assets/js/executive-dashboard-live-v4.js?v=20260901-7').catch(console.warn);\n"
+          ]:
+            text=text.replace(path,'')
+          p.write_text(text,encoding='utf-8')
+          PY
+      - name: Remove self
+        run: rm -f .github/workflows/remove-executive-dashboard-once.yml
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app.html app.js .github/workflows/remove-executive-dashboard-once.yml
+          git commit --allow-empty -m 'remove: executive dashboard complete'
+          git push
