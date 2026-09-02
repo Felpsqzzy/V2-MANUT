@@ -1,0 +1,45 @@
+name: Disable executive dashboard
+aon: [push]
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.head_commit.message, 'cleanup: executive dashboard') }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Remove executive dashboard loader
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('app.html')
+          s=p.read_text(encoding='utf-8')
+          lines=s.splitlines()
+          lines=[x for x in lines if 'executive-dashboard-live-v4.js' not in x]
+          p.write_text('\n'.join(lines)+'\n',encoding='utf-8')
+          PY
+      - name: Remove dashboard autoloaders
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('app.js')
+          s=p.read_text(encoding='utf-8')
+          out=[]
+          for line in s.splitlines():
+              if 'executive-dashboard-live-v4' in line or 'ui-polish-v6' in line or 'role-workspace-v2' in line:
+                  continue
+              out.append(line)
+          p.write_text('\n'.join(out)+'\n',encoding='utf-8')
+          PY
+      - name: Commit cleanup
+        run: |
+          rm -f .github/workflows/disable-executive-dashboard.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app.html app.js .github/workflows/disable-executive-dashboard.yml
+          git commit --allow-empty -m 'cleanup: executive dashboard'
+          git push
