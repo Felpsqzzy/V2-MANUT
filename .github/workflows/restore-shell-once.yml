@@ -1,0 +1,9 @@
+name: Restore last working shell once
+disabled: true
+on:
+  workflow_dispatch:
+jobs:
+  disabled:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Workflow desativado."
