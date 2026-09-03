@@ -1,35 +1,39 @@
-/* Ponte estável para compatibilidade com implantações existentes. */
+/* BIOTROP application bridge — stable asset loading and official workspace bootstrap. */
 (() => {
   'use strict';
-
-  const loadAsset = (tag, attrs) => new Promise((resolve, reject) => {
-    const selector = `script[data-${attrs.key}]`;
-    const existing = document.querySelector(selector);
-    if (existing) return resolve(existing);
-    const el = document.createElement(tag);
-    Object.entries(attrs).forEach(([key, value]) => {
-      if (key === 'key') return;
-      if (key === 'dataset') Object.assign(el.dataset, value);
-      else el[key] = value;
-    });
-    el.onload = () => resolve(el);
-    el.onerror = reject;
-    document.head.appendChild(el);
-  });
 
   const loadStyles = () => {
     if (document.querySelector('link[data-biotrop-dashboard-v3]')) return;
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = './assets/css/dashboard-v3.css?v=3';
+    link.href = './assets/css/dashboard-v3.css?v=4';
     link.dataset.biotropDashboardV3 = '1';
     document.head.appendChild(link);
   };
 
+  const loadScript = (src, datasetKey, onload) => {
+    const selector = `script[data-${datasetKey}]`;
+    const existing = document.querySelector(selector);
+    if (existing) { if (onload) onload(); return existing; }
+    const s = document.createElement('script');
+    s.src = src;
+    s.async = false;
+    s.dataset[datasetKey] = '1';
+    if (onload) s.onload = onload;
+    document.body.appendChild(s);
+    return s;
+  };
+
   window.addEventListener('biotrop:refresh', () => {
-    window.BIOTROP_PRODUCTION_V2?.refreshData(true);
-    window.BIOTROP_DASHBOARD_V3?.render?.();
+    window.BIOTROP_PRODUCTION_V2?.refreshData?.(true);
+    setTimeout(() => window.BIOTROP_DASHBOARD_V3?.render?.(), 250);
   });
+
+  const loadDashboard = () => {
+    loadStyles();
+    loadScript('./assets/js/dashboard-v3.js?v=4', 'biotrop-dashboard-v3');
+    loadScript('./assets/js/default-workspace-v4.js?v=4', 'biotrop-default-workspace-v4');
+  };
 
   const loadSafeNav = () => {
     loadStyles();
@@ -37,37 +41,25 @@
       loadDashboard();
       return;
     }
-    const s = document.createElement('script');
-    s.src = './assets/js/role-navigation-safe-v1.js?v=2';
-    s.async = true;
-    s.dataset.biotropSafeNav = '1';
-    s.onload = () => {
+    const safe = document.createElement('script');
+    safe.src = './assets/js/role-navigation-safe-v1.js?v=3';
+    safe.async = true;
+    safe.dataset.biotropSafeNav = '1';
+    safe.onload = () => {
       if (document.querySelector('script[data-biotrop-role-shell]')) {
         loadDashboard();
         return;
       }
       const shell = document.createElement('script');
-      shell.src = './assets/js/role-shell-v2.js?v=2';
+      shell.src = './assets/js/role-shell-v2.js?v=3';
       shell.async = false;
       shell.dataset.biotropRoleShell = '1';
       shell.onload = loadDashboard;
+      shell.onerror = loadDashboard;
       document.body.appendChild(shell);
     };
-    s.onerror = () => {
-      console.warn('[BIOTROP] Navegação segura não carregou.');
-      loadDashboard();
-    };
-    document.head.appendChild(s);
-  };
-
-  const loadDashboard = () => {
-    if (document.querySelector('script[data-biotrop-dashboard-v3]')) return;
-    const s = document.createElement('script');
-    s.src = './assets/js/dashboard-v3.js?v=3';
-    s.async = false;
-    s.dataset.biotropDashboardV3 = '1';
-    s.onerror = () => console.warn('[BIOTROP] Dashboard V3 não carregou; mantendo a tela original.');
-    document.body.appendChild(s);
+    safe.onerror = () => loadDashboard();
+    document.head.appendChild(safe);
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', loadSafeNav, { once: true });
