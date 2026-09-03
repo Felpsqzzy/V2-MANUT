@@ -1,65 +1,76 @@
-# Banco BIOTROP Gestão Industrial V2
+# BIOTROP Gestão Industrial V2 — Banco PostgreSQL
+
+## Arquitetura oficial
+
+A aplicação utiliza uma única cadeia de persistência:
+
+`Frontend → Express API → PostgreSQL`
+
+O navegador não possui credencial de banco, não usa SDK de Supabase e não acessa PostgreSQL diretamente.
 
 ## Instalação
 
-Execute `BIOTROP_INSTALACAO_V2.sql` completo no SQL Editor do Supabase. O script cria ou complementa RBAC, unidades, medidores, leituras, auditoria, solicitações, treinamentos, views, RPCs, RLS e Storage.
+Execute primeiro:
 
-Não execute seeds operacionais. Os únicos registros fixos do script são perfis, permissões, unidades e os 18 medidores oficiais.
+`database/BIOTROP_CORE_POSTGRES.sql`
 
-## Conta principal
+Esse arquivo é o schema inicial oficial e cria usuários, sessões, RBAC, unidades, medidores, leituras, solicitações, treinamentos, materiais, arquivos, auditoria, views e funções SQL.
 
-Crie a conta no Supabase Auth. Se ela ainda não existia durante a instalação, repita:
+Depois, execute as migrações em `database/migrations/` na ordem numérica/nomenclatura indicada.
 
-```sql
-select public.bootstrap_biotrop_super_admin('felipe.vieira@biotrop.com.br');
+## Configuração da API
+
+Defina no servidor:
+
+```env
+DATABASE_URL=postgresql://usuario:senha@host:5432/biotrop
+DATABASE_SSL=true
+DB_POOL_MAX=10
+SESSION_DAYS=7
+MAX_UPLOAD_BYTES=10485760
 ```
 
-A função não cria conta nem senha.
-Novas contas entram como `viewer` bloqueado e precisam ser liberadas por um `super_admin`.
+`DATABASE_URL` é segredo de servidor e nunca deve ser colocado em JavaScript do navegador.
 
-## Operação
+## Usuários e acesso
 
-- `get_my_access_context()`: contexto do usuário autenticado.
-- `has_permission(text)`: valida permissão efetiva.
-- `admin_set_user_access(uuid,text,boolean)`: atribui perfil e ativa/bloqueia.
-- `admin_set_role_permissions(text,text[])`: altera a matriz de um perfil autorizado.
-- `create_utility_reading(...)`: registra uma leitura.
-- `v_utility_meter_status`: medidores e última medição.
-- `v_utility_reading_history`: histórico limitado pelas políticas.
+Novos cadastros entram bloqueados e com perfil `viewer`. Um administrador deve liberar o usuário e atribuir um perfil com `admin_set_user_access(...)` pela API.
 
-## Modelos de comandos
+Perfis oficiais:
 
-Os exemplos abaixo são modelos. Substitua todos os valores entre `<...>` e execute apenas quando representarem dados reais.
+- `super_admin`
+- `administrador`
+- `pcm`
+- `almoxarife`
+- `tecnico`
+- `viewer`
 
-```sql
--- Modelo para atribuir perfil a uma conta existente:
--- select public.admin_set_user_access(
---   '<UUID_REAL_DO_USUARIO>'::uuid,
---   '<super_admin|administrador|pcm|almoxarife|tecnico|viewer>',
---   true
--- );
+A autorização é feita no backend e reforçada pelas funções/regras do PostgreSQL. O frontend não é fonte de verdade para permissões.
 
--- Modelo de cadastro administrativo de medidor adicional:
--- insert into public.utility_meters(
---   unit_id, code, name, utility_type, location, unit, active
--- )
--- select id, '<CODIGO_REAL>', '<NOME_REAL>', '<agua|gas|energia|horimetro>',
---        name, '<UNIDADE_DE_MEDIDA_REAL>', true
--- from public.industrial_units
--- where code = '<CAMM1|CAMM2|CAMM3|CLOG>';
+## Utilidades e horímetros
 
--- Modelo de desativação sem apagar histórico:
--- update public.utility_meters
--- set active = false, deleted_at = now()
--- where id = '<UUID_REAL_DO_MEDIDOR>'::uuid;
-```
+A leitura deve registrar o medidor, valor, horário do servidor, usuário, GPS quando disponível e evidência fotográfica obrigatória. O banco calcula a leitura anterior e o consumo e impede que uma leitura registrada seja menor que a anterior.
 
-Leituras não devem ser inseridas manualmente com valores calculados. Use o frontend ou `create_utility_reading`, autenticado como o usuário real. A primeira leitura estabelece a base; o banco define usuário, leitura anterior, consumo e horário.
+## Arquivos
+
+Arquivos pequenos podem ser persistidos em `file_objects` como `bytea`. As referências ficam nas tabelas de negócio. Para vídeos grandes, prefira armazenamento de objetos dedicado e mantenha no PostgreSQL apenas metadados/referências.
 
 ## Auditoria
 
-Alterações em medidores, leituras e acessos são registradas em `access_audit_log`. Somente usuários com `audit.view` podem consultar essa tabela.
+Alterações sensíveis devem gerar registro em `audit_logs`/estruturas equivalentes. Não apagar histórico operacional para corrigir registros; utilize status, correção e trilha de auditoria.
 
-## Backup
+## Migração do ambiente anterior
 
-Antes de alterações estruturais futuras, gere backup lógico do banco e exporte separadamente os objetos do bucket privado `utility-evidence`, observando as políticas internas de retenção.
+O código do projeto não depende mais do Supabase. A exportação dos dados antigos é um processo separado: extraia os dados do ambiente anterior, mapeie para o schema PostgreSQL e valide contagens, usuários, solicitações, leituras e treinamentos antes de considerar a migração concluída.
+
+Usuários antigos do Auth podem precisar redefinir a senha caso o hash anterior não possa ser migrado com segurança para `bcrypt`.
+
+## Desenvolvimento
+
+```bash
+npm install
+npm run build
+npm run dev
+```
+
+Em produção, configure as variáveis no ambiente do servidor/Vercel e nunca no frontend.
