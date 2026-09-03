@@ -1,82 +1,19 @@
-const CACHE = 'biotrop-production-v2-27';
-const CORE_ASSETS = [
-  './app.html',
-  './config.js',
-  './assets/biotrop-logo.svg',
-  './assets/js/biotrop-production-v2.js',
-  './utilidades-tech.js'
-];
+const CACHE='biotrop-shell-v2';
+const CORE=['./','./app.html','./config.js','./app.js','./assets/biotrop-logo.svg'];
 
-async function appResponseWithTechLayer(request) {
-  const response = await fetch(request, { cache: 'no-store' });
-  const type = response.headers.get('content-type') || '';
-  if (!type.includes('text/html')) return response;
-
-  let html = await response.text();
-
-  html = html.replace(
-    'function loadFamilies() {\n  return [];\n}',
-    'function loadFamilies() {\n  return FAMILIES_SEED.map(function (f) { return JSON.parse(JSON.stringify(f)); });\n}'
-  );
-
-  const injected = html.replace('</body>', '<script src="./utilidades-tech.js?v=27"></script>\n</body>');
-  return new Response(injected, {
-    status: response.status,
-    statusText: response.statusText,
-    headers: response.headers
-  });
-}
-
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE)
-      .then(cache => cache.addAll(CORE_ASSETS))
-      .then(() => self.skipWaiting())
-  );
-});
-
-self.addEventListener('activate', event => {
-  event.waitUntil((async () => {
-    const keys = await caches.keys();
-    await Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)));
-    await self.clients.claim();
+self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE).catch(()=>{})).then(()=>self.skipWaiting()))});
+self.addEventListener('activate',event=>{event.waitUntil((async()=>{for(const key of await caches.keys())if(key!==CACHE)await caches.delete(key);await self.clients.claim()})())});
+self.addEventListener('fetch',event=>{
+  if(event.request.method!=='GET')return;
+  const url=new URL(event.request.url);
+  if(url.origin!==self.location.origin)return;
+  event.respondWith((async()=>{
+    try{
+      const response=await fetch(event.request,{cache:'no-store'});
+      if(response.ok && (url.pathname.endsWith('.html')||url.pathname.endsWith('.js')||url.pathname.endsWith('.css'))) {
+        const cache=await caches.open(CACHE);await cache.put(event.request,response.clone());
+      }
+      return response;
+    }catch{return caches.match(event.request)}
   })());
-});
-
-self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') return;
-  const url = new URL(event.request.url);
-  if (url.origin !== self.location.origin) return;
-
-  if (url.pathname.endsWith('/app.html')) {
-    event.respondWith((async () => {
-      try {
-        const response = await appResponseWithTechLayer(event.request);
-        const cache = await caches.open(CACHE);
-        cache.put(event.request, response.clone());
-        return response;
-      } catch {
-        return caches.match(event.request);
-      }
-    })());
-    return;
-  }
-
-  if (url.pathname.endsWith('/config.js')) {
-    event.respondWith((async () => {
-      try {
-        const response = await fetch(event.request, { cache: 'no-store' });
-        const cache = await caches.open(CACHE);
-        cache.put(event.request, response.clone());
-        return response;
-      } catch {
-        return caches.match(event.request);
-      }
-    })());
-    return;
-  }
-
-  event.respondWith(
-    caches.match(event.request).then(cached => cached || fetch(event.request))
-  );
 });
