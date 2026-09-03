@@ -1,56 +1,58 @@
 # BIOTROP — Gestão Industrial V2
 
-Versão de produção construída sobre a interface original. O Supabase passa a ser a fonte oficial para usuários, acessos, medidores, leituras, solicitações e treinamentos. A interface não cria administrador local, senha padrão, medidores ou atividade operacional demonstrativa.
+Plataforma de gestão industrial e manutenção com arquitetura modular, API Express e PostgreSQL.
 
-## Principais mudanças
+## Arquitetura oficial
 
-- RBAC normalizado com perfis e permissões granulares.
-- 18 medidores oficiais organizados em CAMM 1, CAMM 2, CAMM 3 e C. LOG.
-- Leitura anterior, consumo, usuário e timestamp calculados ou definidos no banco.
-- Evidência fotográfica em bucket privado.
-- Administração de usuários por RPC, sem criação de senha no navegador.
-- Dashboard e gráficos derivados das consultas reais.
-- Estados vazios quando não houver dados.
-- Backend Express protegido por autenticação e permissões.
+`Frontend → Express API → PostgreSQL`
 
-## 1. Instalar o banco
+O navegador não acessa o banco diretamente e a aplicação não depende de SDK de Supabase em runtime.
 
-No SQL Editor do projeto Supabase, execute integralmente e uma única vez:
+## Módulos
 
-```text
-database/BIOTROP_INSTALACAO_V2.sql
+- Início / Control Room
+- Utilidades e Horímetros
+- SCI / SCM e solicitações
+- Treinamentos
+- Administração e RBAC
+- Perfil do usuário
+- Auditoria e rastreabilidade
+
+## Segurança
+
+A autenticação usa sessão própria em cookie HTTP-only e senhas com hash bcrypt. As permissões são verificadas no backend por RBAC. A API aplica limite de requisições, Helmet, CORS controlado, validação de entrada, limites de payload/upload e queries parametrizadas.
+
+## Banco
+
+O schema oficial está em:
+
+`database/BIOTROP_CORE_POSTGRES.sql`
+
+A compatibilidade dos módulos está em:
+
+`database/migrations/001_runtime_compatibility.sql`
+
+Outras migrações em `database/migrations/` devem ser aplicadas somente depois de revisar se pertencem ao novo runtime PostgreSQL.
+
+## Configuração
+
+Crie as variáveis de ambiente do servidor a partir de `.env.example`:
+
+```env
+DATABASE_URL=postgresql://usuario:senha@host:5432/biotrop
+DATABASE_SSL=true
+DB_POOL_MAX=10
+SESSION_DAYS=7
+MAX_UPLOAD_BYTES=10485760
 ```
 
-O arquivo é idempotente e pode ser repetido. Ele complementa a instalação existente sem apagar leituras, solicitações ou usuários.
+Nunca coloque `DATABASE_URL` no JavaScript do navegador e nunca publique credenciais do banco no GitHub.
 
-## 2. Criar e liberar a conta principal
-
-1. Crie `felipe.vieira@biotrop.com.br` em **Authentication > Users** ou pelo fluxo corporativo.
-2. Não defina senha em SQL nem no frontend.
-3. Se a conta já existia antes da instalação, o SQL atribui `super_admin`.
-4. Se a conta foi criada depois, repita no SQL Editor:
-
-```sql
-select public.bootstrap_biotrop_super_admin('felipe.vieira@biotrop.com.br');
-```
-
-Novas contas entram como `viewer` bloqueado. O `super_admin` deve definir o perfil e liberar o acesso na tela **Administração > Usuários**.
-
-## 3. Configurar o frontend
-
-Edite `config.js` com a URL, a chave pública anon/publishable e a URL do backend. Use `config.example.js` como modelo. Nunca coloque `service_role` no frontend.
-
-Na raiz do projeto, inicie o frontend e abra `http://localhost:5500`:
+## Desenvolvimento
 
 ```bash
-python -m http.server 5500
-```
-
-## 4. Iniciar o backend
-
-Copie `.env.example` para `.env`, preencha as variáveis e, com as dependências já instaladas:
-
-```bash
+npm install
+npm run build
 npm run dev
 ```
 
@@ -61,21 +63,12 @@ npm run build
 npm start
 ```
 
-## Cadastro de dados
+## GitHub / Vercel
 
-Os medidores oficiais são cadastrados pelo SQL sem leitura inicial preenchida. A primeira leitura enviada pelo formulário “Novo apontamento” estabelece a base; solicitações e treinamentos começam vazios e só aparecem após cadastros reais.
+O repositório é a fonte do código. O deploy deve apontar para `main` e possuir `DATABASE_URL` configurada como variável de ambiente do projeto Vercel.
 
-## GitHub
+O backend Vercel está em `api/[...path].ts` e encaminha as rotas `/api/*` para `server/index.ts`.
 
-```bash
-git init
-git add .
-git commit -m "Implementa BIOTROP Gestão Industrial V2"
-git branch -M main
-git remote add origin URL_DO_REPOSITORIO
-git push -u origin main
-```
+## Migração do ambiente anterior
 
-## Limitação de validação
-
-Sem credenciais administrativas e uma instância Supabase disponível, não foi possível executar o SQL, autenticar usuários, enviar fotos ou validar RLS em tempo real. A sintaxe JavaScript e a estrutura estática foram verificadas localmente.
+Os dados antigos não devem ser apagados automaticamente. Primeiro exporte e valide os dados que ainda precisam ser preservados; depois faça o mapeamento para as tabelas PostgreSQL. Usuários do sistema anterior podem precisar de redefinição de senha caso os hashes antigos não sejam compatíveis com bcrypt.
