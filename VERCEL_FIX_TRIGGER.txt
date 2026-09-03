@@ -1,2 +1,0 @@
-Trigger Vercel API preparation workflow.
-Stable shell: dashboard loader removal pending.
