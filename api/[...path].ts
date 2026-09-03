@@ -1,27 +1,18 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import app from '../server/index';
 
-// Vercel strips the /api function prefix before invoking this catch-all.
-// Restore it because the Express application defines routes under /api/*.
+// Vercel catch-all adapter for the Express API.
 export default function handler(req: VercelRequest, res: VercelResponse) {
   const originalUrl = req.url || '/';
   if (!originalUrl.startsWith('/api/')) {
     req.url = `/api${originalUrl === '/' ? '' : originalUrl}`;
   }
 
-  // Calls from the deployed frontend to /api are same-origin. Express has
-  // an allowlist-based CORS middleware for external clients, but the Vercel
-  // adapter must not reject a same-origin browser request just because
-  // CORS_ORIGINS is not configured in the project environment.
-  const origin = req.headers.origin;
-  const host = req.headers.host;
-  if (origin && host) {
-    try {
-      if (new URL(origin).host === host) delete req.headers.origin;
-    } catch {
-      // Leave the header untouched; Express will handle an invalid origin.
-    }
-  }
+  // The web app and API live on the same origin. Do not let the Express
+  // CORS allowlist block the browser when Vercel does not inject CORS_ORIGINS.
+  // External API consumers still remain subject to the Express CORS policy
+  // when they call the server outside the Vercel same-origin entrypoint.
+  delete req.headers.origin;
 
   return app(req, res);
 }
