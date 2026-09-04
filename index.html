@@ -10,10 +10,7 @@
 <body>
 <div id="boot">Abrindo BIOTROP — Gestão Industrial…</div>
 <script>
-(() => {
-  const go = () => location.replace('./rebuild/index.html?v=' + Date.now());
-  try { go(); } catch (e) { document.getElementById('boot').textContent = 'Falha ao abrir o sistema.'; }
-})();
+(() => { const go=()=>location.replace('./rebuild/index.html?v='+Date.now()); try{go()}catch(e){document.getElementById('boot').textContent='Falha ao abrir o sistema.'} })();
 </script>
 <noscript><div id="boot">Ative o JavaScript para abrir o sistema.</div></noscript>
 </body>
