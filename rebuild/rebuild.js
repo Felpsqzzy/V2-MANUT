@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   const frame=document.getElementById('legacy-app'),boot=document.getElementById('boot'),error=document.getElementById('error'),retry=document.getElementById('retry');
-  const CSS_HREF='../rebuild/rebuild.css?v=20260904-7';
+  const CSS_HREF='../rebuild/rebuild.css?v=20260904-8';
   const showError=()=>{boot?.classList.add('hidden');error?.classList.add('show')};
   const cleanUndefined=doc=>{const w=doc.createTreeWalker(doc.body,NodeFilter.SHOW_TEXT),bad=[];let n;while((n=w.nextNode()))if((n.nodeValue||'').trim()==='undefined')bad.push(n);bad.forEach(n=>n.parentNode?.removeChild(n))};
   const inject=doc=>{if(doc.querySelector('link[data-biotrop-rebuild]'))return;const l=doc.createElement('link');l.rel='stylesheet';l.href=CSS_HREF;l.dataset.biotropRebuild='1';doc.head.appendChild(l)};
