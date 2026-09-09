@@ -1,8 +1,0 @@
-name: One-time stable restore
-on:
-  workflow_dispatch:
-jobs:
-  disabled:
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "Workflow desativado para impedir restaurações automáticas."
