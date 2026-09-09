@@ -1,0 +1,28 @@
+/* BIOTROP — linguagem visual inspirada no Plano de Arquitetura v1 */
+:root{--plan-ink:#17332b;--plan-muted:#6d7d76;--plan-line:#dfe8e4;--plan-paper:#f7f9f7;--plan-brand:#003c41;--plan-accent:#1a8f6b}
+body.bt-plan-ui{background:var(--plan-paper)!important;color:var(--plan-ink)}
+body.bt-plan-ui .main-area{background:var(--plan-paper)!important;padding:34px 42px!important}
+body.bt-plan-ui .sidebar{width:272px!important;background:linear-gradient(180deg,#052e31 0%,#0b464a 55%,#062e31 100%)!important;padding:24px 18px!important}
+body.bt-plan-ui .sidebar-nav{gap:5px!important}
+body.bt-plan-ui .nav-item{border-radius:12px!important;padding:11px 13px!important;font-size:13px!important;letter-spacing:.01em}
+body.bt-plan-ui .nav-item.active{background:rgba(255,255,255,.13)!important}
+body.bt-plan-ui .page-title-row{border-bottom:1px solid var(--plan-line);padding-bottom:22px;margin-bottom:28px}
+body.bt-plan-ui .page-title-row h1{font-size:26px!important;letter-spacing:-.025em}
+body.bt-plan-ui .table-card,body.bt-plan-ui .empty-card,body.bt-plan-ui .card,body.bt-plan-ui .dashboard-card{border-radius:12px!important;box-shadow:0 8px 28px rgba(17,48,40,.055)!important;border-color:var(--plan-line)!important}
+body.bt-plan-ui .primary-btn{border-radius:10px!important;background:var(--plan-brand)!important}
+body.bt-plan-ui .primary-btn:hover{background:#07565b!important}
+.plan-index-bar{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 26px;padding:10px 0;border-bottom:1px solid var(--plan-line)}
+.plan-index-bar span{font-size:10px;font-weight:800;letter-spacing:.08em;color:#74837d;padding:5px 7px;border-radius:6px;background:#edf2ef}
+.plan-index-bar span.active{background:#dcebea;color:var(--plan-brand)}
+.plan-context{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:24px}
+.plan-context .eyebrow{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--plan-accent);margin-bottom:7px}
+.plan-context h2{margin:0;font-size:30px;line-height:1.08;letter-spacing:-.035em;color:var(--plan-ink)}
+.plan-context p{max-width:680px;margin:10px 0 0;color:var(--plan-muted);line-height:1.65;font-size:14px}
+.plan-meta{display:grid;grid-template-columns:repeat(4,minmax(110px,1fr));gap:10px;margin:18px 0 28px}
+.plan-meta div{padding:12px 14px;border-top:2px solid var(--plan-brand);background:#fff;border:1px solid var(--plan-line);border-radius:9px}
+.plan-meta small{display:block;color:#819089;font-size:10px;text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px}.plan-meta strong{font-size:12px;color:var(--plan-ink)}
+.plan-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.plan-card{background:#fff;border:1px solid var(--plan-line);border-radius:12px;padding:18px;min-height:150px}.plan-card .num{font:italic 700 18px Georgia,serif;color:var(--plan-brand);margin-bottom:10px}.plan-card h3{margin:0 0 7px;font-size:15px}.plan-card p{margin:0;color:var(--plan-muted);font-size:12.5px;line-height:1.55}.plan-card .state{display:inline-flex;margin-top:14px;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:800;background:#eef7f2;color:#176c51}
+.plan-section{margin-top:28px}.plan-section h3{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:#74837d;margin:0 0 12px}.plan-flow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.plan-flow span{padding:9px 12px;border:1px solid var(--plan-line);background:#fff;border-radius:8px;font-size:11px;font-weight:700}.plan-flow b{color:#9aa8a2}
+@media(max-width:900px){body.bt-plan-ui .main-area{padding:22px 18px!important}.plan-grid{grid-template-columns:1fr}.plan-meta{grid-template-columns:repeat(2,1fr)}.plan-context h2{font-size:24px}}
+@media(max-width:600px){body.bt-plan-ui .sidebar{width:100%!important;position:relative!important}.plan-meta{grid-template-columns:1fr 1fr}.plan-meta div{padding:10px}.plan-context{display:block}.plan-context h2{font-size:22px}}
